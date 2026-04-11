@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./utils/authRoutes.js";
+import roomRoutes from "./routes/roomRoutes.js";
 // Create an Express application instance to set up our server and define routes for handling incoming HTTP requests. This app will serve as the main entry point for our backend API, allowing us to define endpoints for various functionalities such as user authentication, chat management, and more.
 const app = express();
 
@@ -23,6 +24,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Use the authRoutes router to handle all routes related to user authentication and profile management under the "/api/auth" path. This allows us to organize our authentication-related routes in a modular way, improving code organization and maintainability while providing a clear structure for handling user registration, login, logout, and profile management functionalities in our backend API.
 app.use("/api/auth", authRoutes);
+
+app.use("/api/rooms", roomRoutes);
 
 // Define a simple route for the root URL ("/") to respond with a JSON message indicating that the Chat API is running. This serves as a basic health check endpoint to verify that our backend server is up and operational, allowing developers and monitoring tools to quickly confirm the status of the API.
 app.get("/", (req, res) => {
