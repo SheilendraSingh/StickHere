@@ -1,11 +1,10 @@
+import "dotenv/config";
 import http from "http";
-import dotenv from "dotenv";
 import { Server } from "socket.io";
 import app from "./app.js";
 import jwt from "jsonwebtoken";
-
-// Load environment variables from .env file
-dotenv.config();
+import connectDB from "./config/db.js";
+import mongoose from "mongoose";
 
 // Set the port from environment variable or default to 5000
 const PORT = process.env.PORT || 5000;
@@ -43,34 +42,52 @@ const addOnlineUser = (userId, socketId) => {
 
 // Function to remove a user's socket ID from the online users map, The removeOnlineUserSocket function is responsible for removing a user's socket ID from the onlineUsers map. It takes a userId and a socketId as parameters. It first checks if there are any socket IDs associated with the given userId in the onlineUsers map. If there are, it removes the specified socketId from the Set of socket IDs for that userId. If, after removing the socketId, the Set of socket IDs for that userId is empty, it means that the user has no active connections, and we can safely remove the userId from the onlineUsers map entirely. This helps us maintain an accurate list of online users and their active connections.
 const removeOnlineUserSocket = (userId, socketId) => {
+  // Check if there are any socket IDs associated with the given userId in the onlineUsers map. If there are, remove the specified socketId from the Set of socket IDs for that userId. If, after removing the socketId, the Set of socket IDs for that userId is empty, it means that the user has no active connections, and we can safely remove the userId from the onlineUsers map entirely. This helps us maintain an accurate list of online users and their active connections.
   const userSockets = onlineUsers.get(userId);
+
+  // If there are no socket IDs associated with the given userId, return early to avoid errors when trying to delete a socketId from an undefined Set.
   if (!userSockets) return;
+
+  // Remove the specified socketId from the Set of socket IDs for that userId. If, after removing the socketId, the Set of socket IDs for that userId is empty, it means that the user has no active connections, and we can safely remove the userId from the onlineUsers map entirely. This helps us maintain an accurate list of online users and their active connections.
   userSockets.delete(socketId);
+
+  // If, after removing the socketId, the Set of socket IDs for that userId is empty, it means that the user has no active connections, and we can safely remove the userId from the onlineUsers map entirely. This helps us maintain an accurate list of online users and their active connections.
   if (userSockets.size === 0) onlineUsers.delete(userId);
 };
 
+// Middleware to authenticate Socket.IO connections using JWT, This middleware function is used to authenticate incoming Socket.IO connections to the "/chat" namespace. It checks for the presence of a JWT token in the handshake authentication data, verifies the token using the secret key, and extracts the userId from the decoded token. If the token is valid and contains a userId, it attaches the userId to the socket object for later use in event handlers. If any step of the authentication process fails (e.g., missing token, invalid token, missing userId), it calls next with an error to reject the connection and prevent unauthorized access to the chat functionality.
 chatNamespace.use((socket, next) => {
   try {
+    // Check for the presence of a JWT token in the handshake authentication data. If the token is missing, return an error to reject the connection and prevent unauthorized access to the chat functionality.
     const token = socket.handshake.auth?.token;
+
+    // If the token is missing, return an error to reject the connection and prevent unauthorized access to the chat functionality.
     if (!token) return next(new Error("Unauthorized"));
 
+    // Verify the token using the secret key, and extract the userId from the decoded token. If the token is invalid or does not contain a userId, return an error to reject the connection and prevent unauthorized access to the chat functionality.
     if (!process.env.JWT_SECRET) {
       return next(new Error("Unauthorized"));
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // If the token is invalid or does not contain a userId, return an error to reject the connection and prevent unauthorized access to the chat functionality.
     if (!decoded?.userId) {
       return next(new Error("Unauthorized"));
     }
 
+    // If the token is valid and contains a userId, attach the userId to the socket object for later use in event handlers. This allows us to identify the user associated with each socket connection and manage their interactions within the chat application accordingly.
     socket.userId = decoded.userId;
+
     return next();
   } catch (error) {
+    // Log any errors that occur during the authentication process to the console, including the error message and a timestamp. This helps us identify and troubleshoot issues related to socket authentication in our application.
     console.error("Socket Auth Error:", {
       message: error.message,
       time: new Date(),
     });
+
+    // If any step of the authentication process fails (e.g., missing token, invalid token, missing userId), call next with an error to reject the connection and prevent unauthorized access to the chat functionality.
     return next(new Error("Unauthorized"));
   }
 });
@@ -246,8 +263,31 @@ server.on("error", (error) => {
   console.error("Server error:", error);
 });
 
-// Start the server and listen on the specified port
-server.listen(PORT, () => {
-  // Log a message to the console when the server is running
+// Connect to the MongoDB database before starting the server, This ensures that our application has a successful connection to the database before it starts accepting incoming requests. If the database connection fails, we can log the error and prevent the server from starting, which helps maintain the stability and reliability of our application.
+await connectDB();
+
+// Start the server and listen on the specified port, When the server starts successfully, we log a message to the console indicating that the server is running and listening on the specified port. This provides feedback to developers and monitoring tools that the backend API is up and running, allowing them to verify that the server is operational and ready to handle incoming requests.
+const httpServer = server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Graceful shutdown function to close the server and database connection when the application is terminated, This function is responsible for gracefully shutting down the server and closing the MongoDB connection when the application receives a termination signal (e.g., SIGINT or SIGTERM). It ensures that all ongoing requests are completed before shutting down the server and disconnecting from the database, which helps prevent data loss and maintain the integrity of our application during shutdown.
+const shutdown = async (signal) => {
+  // Log a message indicating that a shutdown signal has been received, and that the server is shutting down. This provides feedback to developers and monitoring tools that the application is in the process of shutting down, allowing them to take appropriate actions if necessary.
+  console.log(`${signal} received. Shutting down...`);
+
+  // Attempt to close the HTTP server and disconnect from MongoDB gracefully. If any errors occur during the shutdown process, log the error message to the console and exit the process with a non-zero status code to indicate that the shutdown was not successful.
+  try {
+    httpServer.close(async () => {
+      await mongoose.connection.close();
+      console.log("HTTP server closed and MongoDB disconnected.");
+      process.exit(0);
+    });
+  } catch (err) {
+    console.error("Shutdown error:", err.message);
+    process.exit(1);
+  }
+};
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
