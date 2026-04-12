@@ -34,3 +34,4 @@ const mediaUpload = multer({
 });
 
 export const uploadSingleMedia = mediaUpload.single("file");
+export const uploadMultipleMedia = mediaUpload.array("files", 10);
