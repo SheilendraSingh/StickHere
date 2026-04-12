@@ -1,9 +1,9 @@
 import "dotenv/config";
 import http from "http";
-import { Server } from "socket.io";
 import app from "./app.js";
 import jwt from "jsonwebtoken";
 import connectDB from "./config/db.js";
+import createSocketServer from "./config/socket.js";
 import mongoose from "mongoose";
 
 // Set the port from environment variable or default to 5000
@@ -16,13 +16,7 @@ const server = http.createServer(app);
 const allowedOrigins = [process.env.FRONTEND_URL || "http://localhost:3000"];
 
 // Create a new Socket.IO server and configure CORS settings
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
+const io = createSocketServer(server, allowedOrigins);
 // Map to store online users and their corresponding socket IDs
 const onlineUsers = new Map();
 

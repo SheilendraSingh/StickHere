@@ -19,7 +19,8 @@ pnpm-debug.log*
 
 # OS / IDE files
 .DS_Store
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 
 # Archives and temp files
