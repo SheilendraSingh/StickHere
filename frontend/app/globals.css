@@ -24,13 +24,34 @@ body {
     var(--background);
   color: var(--foreground);
   font-family:
-    var(--font-geist-sans),
+    "Roboto",
+    "Noto Sans",
     "Segoe UI",
-    Tahoma,
-    Geneva,
-    Verdana,
+    Arial,
     sans-serif;
   min-height: 100svh;
+}
+
+@supports (-webkit-touch-callout: none) {
+  @media (hover: none) and (pointer: coarse) {
+    body {
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Text",
+        "SF Pro Display",
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+    }
+  }
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 a {
