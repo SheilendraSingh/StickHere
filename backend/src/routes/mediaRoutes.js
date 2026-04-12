@@ -1,6 +1,6 @@
-
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
+import { uploadSingleMedia } from "../middleware/uploadMiddleware.js";
 import {
   deleteMedia,
   getUploadSignature,
@@ -9,7 +9,7 @@ import {
 
 const router = express.Router();
 
-router.post("/upload", authMiddleware, uploadMedia);
+router.post("/upload", authMiddleware, uploadSingleMedia, uploadMedia);
 router.post("/signature", authMiddleware, getUploadSignature);
 router.delete("/", authMiddleware, deleteMedia);
 router.delete("/:publicId", authMiddleware, deleteMedia);
