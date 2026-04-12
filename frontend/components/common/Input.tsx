@@ -15,12 +15,12 @@ export default function Input({
 }: InputProps) {
   return (
     <label className="flex w-full flex-col gap-1">
-      {label ? <span className="text-sm font-medium text-zinc-700">{label}</span> : null}
+      {label ? <span className="text-sm font-medium text-[#B0E4CC]">{label}</span> : null}
       <input
-        className={`h-11 rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none ring-sky-500 transition focus:border-sky-500 focus:ring-2 ${className}`}
+        className={`h-11 rounded-md border border-[#408A71] bg-[#091413]/70 px-3 text-sm text-[#B0E4CC] placeholder:text-[#B0E4CC]/55 outline-none ring-[#B0E4CC]/30 transition focus:border-[#B0E4CC] focus:ring-2 ${className}`}
         {...props}
       />
-      {error ? <span className="text-xs text-red-600">{error}</span> : null}
+      {error ? <span className="text-xs text-red-200">{error}</span> : null}
     </label>
   );
 }

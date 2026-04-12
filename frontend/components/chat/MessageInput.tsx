@@ -25,9 +25,12 @@ export default function MessageInput({
   };
 
   return (
-    <form onSubmit={submit} className="flex gap-2 border-t border-zinc-200 bg-white p-3">
+    <form
+      onSubmit={submit}
+      className="flex gap-2 border-t border-[#408A71]/45 bg-[#285A48] p-3"
+    >
       <input
-        className="h-11 flex-1 rounded-md border border-zinc-300 px-3 text-sm text-zinc-900 outline-none ring-sky-500 focus:border-sky-500 focus:ring-2"
+        className="h-11 flex-1 rounded-md border border-[#408A71] bg-[#091413]/70 px-3 text-sm text-[#B0E4CC] placeholder:text-[#B0E4CC]/55 outline-none ring-[#B0E4CC]/30 focus:border-[#B0E4CC] focus:ring-2"
         placeholder="Type a message..."
         value={text}
         onChange={(event) => setText(event.target.value)}

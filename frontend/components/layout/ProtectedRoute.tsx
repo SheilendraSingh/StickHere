@@ -21,8 +21,8 @@ export default function ProtectedRoute({
 
   if (isLoading || !isAuthenticated) {
     return (
-      <main className="flex min-h-[100svh] items-center justify-center bg-zinc-50">
-        <p className="text-sm text-zinc-500">Checking session...</p>
+      <main className="flex min-h-[100svh] items-center justify-center bg-[#091413]">
+        <p className="text-sm text-[#B0E4CC]/85">Checking session...</p>
       </main>
     );
   }

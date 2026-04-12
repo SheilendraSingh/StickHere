@@ -11,8 +11,8 @@ export default function RoomCard({ room, isActive, onClick }: RoomCardProps) {
     <button
       className={`w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
         isActive
-          ? "bg-sky-100 text-sky-800"
-          : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
+          ? "border border-[#B0E4CC]/40 bg-[#408A71] text-[#B0E4CC]"
+          : "text-[#B0E4CC]/90 hover:bg-[#408A71]/30 hover:text-[#B0E4CC]"
       }`}
       onClick={() => onClick(room)}
       type="button"

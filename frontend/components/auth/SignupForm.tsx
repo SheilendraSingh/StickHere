@@ -72,14 +72,16 @@ export default function SignupForm() {
         onChange={(event) => setCity(event.target.value)}
       />
       {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+        <p className="rounded-md border border-red-300/40 bg-[#091413]/70 px-3 py-2 text-sm text-red-200">
+          {error}
+        </p>
       ) : null}
       <Button type="submit" isLoading={isLoading}>
         Create Account
       </Button>
-      <p className="text-center text-sm text-zinc-600">
+      <p className="text-center text-sm text-[#B0E4CC]/85">
         Already have an account?{" "}
-        <Link href="/auth/login" className="font-semibold text-sky-600">
+        <Link href="/auth/login" className="font-semibold text-[#B0E4CC] underline-offset-4 hover:underline">
           Login
         </Link>
       </p>

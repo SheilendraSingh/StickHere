@@ -12,11 +12,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClassMap: Record<Variant, string> = {
   primary:
-    "bg-sky-600 text-white hover:bg-sky-700 disabled:bg-sky-400 disabled:cursor-not-allowed",
+    "bg-[#B0E4CC] text-[#091413] hover:bg-[#9fd9c0] disabled:bg-[#5f8f7b] disabled:text-[#d2efe2] disabled:cursor-not-allowed",
   secondary:
-    "bg-zinc-200 text-zinc-900 hover:bg-zinc-300 disabled:bg-zinc-100 disabled:text-zinc-500 disabled:cursor-not-allowed",
+    "bg-[#285A48] text-[#B0E4CC] hover:bg-[#316b56] disabled:bg-[#244d3f] disabled:text-[#87baa5] disabled:cursor-not-allowed",
   ghost:
-    "bg-transparent text-zinc-700 hover:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed",
+    "bg-transparent text-[#B0E4CC] hover:bg-[#285A48]/60 disabled:text-[#7ea896] disabled:cursor-not-allowed",
 };
 
 export default function Button({

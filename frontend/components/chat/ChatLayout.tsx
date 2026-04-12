@@ -28,22 +28,22 @@ export default function ChatLayout() {
   const onlineUsers = useMemo(() => (user ? [user] : []), [user]);
 
   return (
-    <main className="flex h-[100svh] bg-zinc-50">
+    <main className="flex h-[100svh] bg-[#091413]">
       <ChatSidebar
         rooms={rooms}
         activeRoom={activeRoom}
         onSelectRoom={setActiveRoom}
         isLoading={isRoomLoading}
       />
-      <section className="flex min-w-0 flex-1 flex-col">
+      <section className="flex min-w-0 flex-1 flex-col bg-[#091413]/70">
         <ChatHeader room={activeRoom} />
 
-        <div className="flex items-center justify-between bg-white px-4 py-2 text-xs text-zinc-500">
+        <div className="flex items-center justify-between border-b border-[#408A71]/45 bg-[#285A48]/80 px-4 py-2 text-xs text-[#B0E4CC]/90">
           <span>{roomError || messageError || "Connected"}</span>
           <button
             type="button"
             onClick={() => void logout()}
-            className="rounded bg-zinc-100 px-2 py-1 font-semibold text-zinc-700 hover:bg-zinc-200"
+            className="rounded border border-[#408A71]/60 bg-[#091413]/60 px-2 py-1 font-semibold text-[#B0E4CC] hover:bg-[#091413]"
           >
             Logout
           </button>

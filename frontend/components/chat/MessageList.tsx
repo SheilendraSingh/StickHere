@@ -14,7 +14,7 @@ export default function MessageList({
   isLoading = false,
 }: MessageListProps) {
   if (isLoading) {
-    return <div className="p-4 text-sm text-zinc-500">Loading messages...</div>;
+    return <div className="p-4 text-sm text-[#B0E4CC]/80">Loading messages...</div>;
   }
 
   if (messages.length === 0) {
