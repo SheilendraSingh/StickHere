@@ -1,5 +1,9 @@
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
+import {
+  assertEmailConfigured,
+  sendTestEmailService,
+} from "../services/emailServices.js";
 
 export const registerUser = async (req, res) => {
   try {
@@ -177,5 +181,43 @@ export const logoutUser = async (_req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Server error during logout" });
+  }
+};
+
+export const sendTestEmail = async (req, res) => {
+  try {
+    assertEmailConfigured();
+
+    const explicitTo =
+      typeof req.body?.to === "string" ? req.body.to.trim().toLowerCase() : "";
+    const fallbackTo =
+      typeof req.user?.email === "string"
+        ? req.user.email.trim().toLowerCase()
+        : "";
+    const to = explicitTo || fallbackTo;
+
+    if (!to) {
+      return res.status(400).json({
+        success: false,
+        message: "Recipient email is required (body.to or logged-in user email)",
+      });
+    }
+
+    const result = await sendTestEmailService({
+      to,
+      requestedBy: req.user?.name || req.user?.email || "StickHere User",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "SMTP test email sent successfully",
+      result,
+    });
+  } catch (error) {
+    console.error("Send test email error", error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Server error while sending test email",
+    });
   }
 };

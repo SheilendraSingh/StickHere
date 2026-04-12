@@ -4,6 +4,7 @@ import {
   registerUser,
   getUserProfile,
   logoutUser,
+  sendTestEmail,
   updateUserProfile,
 } from "../controllers/authController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -19,5 +20,6 @@ router.post("/login", loginUser);
 router.post("/logout", authMiddleware, logoutUser);
 router.get("/profile", authMiddleware, getUserProfile);
 router.put("/profile", authMiddleware, updateUserProfile);
+router.post("/test-email", authMiddleware, sendTestEmail);
 
 export default router;
