@@ -4,7 +4,11 @@ export const API_BASE_URL =
 export const SOCKET_BASE_URL =
   process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
 
-export const SOCKET_NAMESPACE = "/chat";
+const rawSocketNamespace = process.env.NEXT_PUBLIC_SOCKET_NAMESPACE || "/chat";
+
+export const SOCKET_NAMESPACE = rawSocketNamespace.startsWith("/")
+  ? rawSocketNamespace
+  : `/${rawSocketNamespace}`;
 
 export const TOKEN_STORAGE_KEY = "stickhere_auth_token";
 

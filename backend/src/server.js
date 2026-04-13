@@ -5,11 +5,12 @@ import app from "./app.js";
 import connectDB from "./config/db.js";
 import createSocketServer from "./config/socket.js";
 import initializeSocketLayer from "./sockets/index.js";
+import { getAllowedOrigins } from "./config/allowedOrigins.js";
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
-const allowedOrigins = [process.env.FRONTEND_URL || "http://localhost:3000"];
+const allowedOrigins = getAllowedOrigins();
 const io = createSocketServer(server, allowedOrigins);
 
 initializeSocketLayer(io, { namespace: "/chat" });

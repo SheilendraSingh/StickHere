@@ -1,8 +1,5 @@
 import { Server } from "socket.io";
-
-const getAllowedOrigins = () => [
-  process.env.FRONTEND_URL || "http://localhost:3000",
-];
+import { getAllowedOrigins } from "./allowedOrigins.js";
 
 const createSocketServer = (httpServer, allowedOrigins = getAllowedOrigins()) =>
   new Server(httpServer, {

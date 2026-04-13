@@ -7,16 +7,24 @@ import mediaRoutes from "./routes/mediaRoutes.js";
 import gifRoutes from "./routes/gifRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import { getAllowedOrigins, isAllowedOrigin } from "./config/allowedOrigins.js";
 // Create an Express application instance to set up our server and define routes for handling incoming HTTP requests. This app will serve as the main entry point for our backend API, allowing us to define endpoints for various functionalities such as user authentication, chat management, and more.
 const app = express();
 
 // Define an array of allowed origins for CORS (Cross-Origin Resource Sharing) to specify which frontend applications are permitted to access our backend API. This helps enhance security by restricting access to only trusted sources, preventing unauthorized cross-origin requests that could potentially lead to security vulnerabilities.
-const allowedOrigins = [process.env.FRONTEND_URL || "http://localhost:3000"];
+const allowedOrigins = getAllowedOrigins();
 
 // Use the CORS middleware to enable cross-origin requests from the specified allowed origins, allowing our frontend applications to communicate with the backend API while ensuring that only authorized sources can access our resources. This is essential for enabling seamless integration between the frontend and backend components of our chat application.
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin, allowedOrigins)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("CORS origin not allowed"));
+    },
     credentials: true,
   }),
 );
