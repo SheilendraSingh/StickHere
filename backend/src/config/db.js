@@ -53,6 +53,11 @@ const connectDB = async () => {
   } catch (error) {
     // If an error occurs during the connection process, log the error message to the console and exit the process with a non-zero status code to indicate that the application failed to start due to a database connection issue. This helps ensure that we are aware of any issues with the database connection and can take appropriate action to resolve them before attempting to run the application.
     console.error("MongoDB connection error:", error.message);
+    if (/^mongodb\+srv:\/\//i.test(mongoURI)) {
+      console.error(
+        "Atlas checklist: allow your current IP in Network Access, confirm the cluster is running, and verify DB user credentials.",
+      );
+    }
     // Exit the process with a non-zero status code to indicate that the application failed to start due to a database connection issue.
     process.exit(1);
   }

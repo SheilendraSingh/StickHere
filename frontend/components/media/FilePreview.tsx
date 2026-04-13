@@ -25,7 +25,7 @@ export default function FilePreview({ file, onRemove }: FilePreviewProps) {
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{file.filename || "Attachment"}</p>
         <p className="text-xs text-[#B0E4CC]/75">
-          {file.fileType.toUpperCase()} • {formatSize(file.size || 0)}
+          {file.fileType.toUpperCase()} - {formatSize(file.size || 0)}
         </p>
       </div>
       {onRemove ? (

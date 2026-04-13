@@ -57,8 +57,8 @@ export default function ChatLayout() {
         />
         <TypingIndicator users={typingUsers} />
         <MessageInput
-          onSend={async (text) => {
-            await send(text);
+          onSend={async (payload) => {
+            await send(payload);
           }}
           disabled={!activeRoom}
           isSending={isSending}

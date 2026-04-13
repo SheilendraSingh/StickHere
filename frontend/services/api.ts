@@ -59,16 +59,24 @@ export const getApiErrorMessage = (
   fallback = "Something went wrong",
 ) => {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ message?: string; debug?: string }>;
+    const axiosError = error as AxiosError<{
+      message?: string;
+      debug?: string;
+      error?: string;
+    }>;
     const apiMessage = axiosError.response?.data?.message;
     const apiDebug = axiosError.response?.data?.debug;
+    const apiError = axiosError.response?.data?.error;
 
     if (apiMessage) {
-      if (process.env.NODE_ENV !== "production" && apiDebug) {
-        return `${apiMessage} (${apiDebug})`;
+      if (process.env.NODE_ENV !== "production") {
+        if (apiDebug) return `${apiMessage} (${apiDebug})`;
+        if (apiError) return `${apiMessage} (${apiError})`;
       }
       return apiMessage;
     }
+
+    if (apiError) return apiError;
 
     return axiosError.message || fallback;
   }

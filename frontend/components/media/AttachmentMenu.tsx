@@ -1,10 +1,12 @@
 "use client";
 
 export type AttachmentType =
+  | "media"
   | "image"
   | "video"
   | "document"
   | "audio"
+  | "camera"
   | "gif"
   | "sticker";
 
@@ -13,13 +15,15 @@ interface AttachmentMenuProps {
   disabled?: boolean;
 }
 
-const options: Array<{ type: AttachmentType; label: string }> = [
-  { type: "image", label: "Image" },
-  { type: "video", label: "Video" },
-  { type: "document", label: "Document" },
-  { type: "audio", label: "Audio" },
-  { type: "gif", label: "GIF" },
-  { type: "sticker", label: "Sticker" },
+const options: Array<{
+  type: AttachmentType;
+  label: string;
+  dotClass: string;
+}> = [
+  { type: "document", label: "Document", dotClass: "bg-[#9A8BFF]" },
+  { type: "media", label: "Photos & videos", dotClass: "bg-[#3FA9FF]" },
+  { type: "camera", label: "Camera", dotClass: "bg-[#FF4FA0]" },
+  { type: "audio", label: "Audio", dotClass: "bg-[#FF8C3A]" },
 ];
 
 export default function AttachmentMenu({
@@ -27,16 +31,21 @@ export default function AttachmentMenu({
   disabled = false,
 }: AttachmentMenuProps) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="w-56 rounded-2xl border border-[#2A2F33] bg-[#161A1F] p-2 shadow-2xl shadow-black/50">
       {options.map((option) => (
         <button
           key={option.type}
           type="button"
           disabled={disabled}
           onClick={() => onSelect(option.type)}
-          className="rounded-md border border-[#408A71]/70 bg-[#285A48] px-2 py-2 text-xs font-medium text-[#B0E4CC] transition hover:bg-[#408A71] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold text-[#D8DEE5] transition hover:bg-[#222831] disabled:cursor-not-allowed disabled:opacity-45"
+          title={option.label}
         >
-          {option.label}
+          <span
+            aria-hidden
+            className={`h-2.5 w-2.5 shrink-0 rounded-full ${option.dotClass}`}
+          />
+          <span>{option.label}</span>
         </button>
       ))}
     </div>

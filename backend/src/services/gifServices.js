@@ -1,4 +1,3 @@
-
 export class GifServiceError extends Error {
   constructor(message, statusCode = 500, details = null) {
     super(message);
@@ -8,65 +7,128 @@ export class GifServiceError extends Error {
   }
 }
 
-const TENOR_BASE_URL = "https://tenor.googleapis.com/v2";
+const GIPHY_BASE_URL = "https://api.giphy.com/v1";
 
 const parsePositiveInt = (value, fallback) => {
   const n = Number(value);
   return Number.isInteger(n) && n > 0 ? n : fallback;
 };
 
-const getTenorApiKey = () => {
+const parseNonNegativeInt = (value, fallback) => {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : fallback;
+};
+
+const normalizeLocaleToLang = (locale = "en_US") => {
+  const normalized = String(locale).trim();
+  if (!normalized) return "en";
+  return normalized.split(/[_-]/)[0]?.toLowerCase() || "en";
+};
+
+const mapContentFilterToRating = (contentFilter = "off") => {
+  const normalized = String(contentFilter).trim().toLowerCase();
+  if (normalized === "high") return "g";
+  if (normalized === "medium") return "pg";
+  if (normalized === "low") return "pg-13";
+  return "";
+};
+
+const getGiphyApiKey = () => {
   const key =
-    process.env.TENOR_API_KEY ||
+    process.env.GIPHY_API_KEY ||
     process.env.GIF_API_KEY ||
-    process.env.GIPHY_API_KEY;
+    process.env.TENOR_API_KEY;
   if (!key) {
     throw new GifServiceError(
-      "TENOR_API_KEY is required for GIF search service",
+      "GIPHY_API_KEY is required for GIF search service",
       500,
     );
   }
   return key;
 };
 
-const mapTenorResult = (item = {}) => {
-  const mediaFormats = item.media_formats || {};
-  const preferred =
-    mediaFormats.gif ||
-    mediaFormats.tinygif ||
-    mediaFormats.mediumgif ||
-    mediaFormats.nanogif ||
-    {};
+const pickPreviewImage = (images = {}) =>
+  images.fixed_width_small ||
+  images.fixed_width_downsampled ||
+  images.fixed_width ||
+  images.downsized_small ||
+  images.original ||
+  {};
+
+const pickShareImage = (images = {}) =>
+  images.original || images.fixed_width || images.downsized || {};
+
+const toSafeNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const inferTags = (item = {}) => {
+  const rawSlug = String(item.slug || "")
+    .trim()
+    .toLowerCase();
+  if (!rawSlug) return [];
+  return rawSlug
+    .split("-")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag && tag !== "giphy");
+};
+
+const mapGiphyResult = (item = {}) => {
+  const images = item.images || {};
+  const preview = pickPreviewImage(images);
+  const share = pickShareImage(images);
+  const previewUrl =
+    preview.webp || preview.url || share.webp || share.url || "";
+  const shareUrl = share.url || share.webp || preview.url || preview.webp || "";
 
   return {
     id: item.id || "",
-    title: item.content_description || "",
-    url: item.itemurl || preferred.url || "",
-    previewUrl: preferred.preview || preferred.url || "",
-    width: preferred.dims?.[0] || 0,
-    height: preferred.dims?.[1] || 0,
-    durationSeconds: Number(preferred.duration || 0),
-    tags: Array.isArray(item.tags) ? item.tags : [],
+    title: item.title || "",
+    url: shareUrl,
+    previewUrl,
+    width: toSafeNumber(share.width || preview.width),
+    height: toSafeNumber(share.height || preview.height),
+    durationSeconds: 0,
+    tags: inferTags(item),
   };
 };
 
-const requestTenor = async (path, params = {}) => {
-  const apiKey = getTenorApiKey();
-  const searchParams = new URLSearchParams({
-    key: apiKey,
-    client_key: process.env.TENOR_CLIENT_KEY || "stickhere-backend",
-    ...params,
+const requestGiphy = async (path, params = {}) => {
+  const apiKey = getGiphyApiKey();
+  const searchParams = new URLSearchParams();
+  searchParams.set("api_key", apiKey);
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    if (typeof value === "string" && value.trim() === "") return;
+    searchParams.set(key, String(value));
   });
 
-  const url = `${TENOR_BASE_URL}/${path}?${searchParams.toString()}`;
+  const url = `${GIPHY_BASE_URL}/${path}?${searchParams.toString()}`;
   const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
 
   if (!response.ok) {
+    let providerMessage = "";
+    try {
+      const errorPayload = await response.json();
+      providerMessage =
+        errorPayload?.message ||
+        errorPayload?.meta?.msg ||
+        errorPayload?.meta?.error_type ||
+        "";
+    } catch {
+      // Ignore parse errors and fallback to generic status message.
+    }
+
     throw new GifServiceError(
-      `GIF provider request failed with status ${response.status}`,
-      502,
+      providerMessage
+        ? `GIF provider request failed (${response.status}): ${providerMessage}`
+        : `GIF provider request failed with status ${response.status}`,
+      response.status,
+      { provider: "giphy", status: response.status, path },
     );
   }
 
@@ -86,22 +148,29 @@ export const searchGifsService = async ({
   }
 
   const safeLimit = Math.min(parsePositiveInt(limit, 20), 50);
-  const data = await requestTenor("search", {
+  const safeOffset = parseNonNegativeInt(pos, 0);
+  const lang = normalizeLocaleToLang(locale);
+  const rating = mapContentFilterToRating(contentFilter);
+
+  const data = await requestGiphy("gifs/search", {
     q: trimmedQuery,
     limit: String(safeLimit),
-    pos: String(pos || ""),
-    locale,
-    contentfilter: contentFilter,
-    media_filter: "gif,tinygif,mediumgif",
+    offset: String(safeOffset),
+    lang,
+    rating,
   });
+
+  const results = Array.isArray(data.data) ? data.data.map(mapGiphyResult) : [];
+  const count = results.length;
+  const offset = toSafeNumber(data?.pagination?.offset);
+  const total = toSafeNumber(data?.pagination?.total_count);
+  const nextOffset = offset + count;
 
   return {
     query: trimmedQuery,
-    count: Array.isArray(data.results) ? data.results.length : 0,
-    next: data.next || "",
-    results: Array.isArray(data.results)
-      ? data.results.map(mapTenorResult)
-      : [],
+    count,
+    next: total > nextOffset ? String(nextOffset) : "",
+    results,
   };
 };
 
@@ -112,37 +181,139 @@ export const getTrendingGifsService = async ({
   contentFilter = "off",
 } = {}) => {
   const safeLimit = Math.min(parsePositiveInt(limit, 20), 50);
-  const data = await requestTenor("featured", {
+  const safeOffset = parseNonNegativeInt(pos, 0);
+  const lang = normalizeLocaleToLang(locale);
+  const rating = mapContentFilterToRating(contentFilter);
+
+  const data = await requestGiphy("gifs/trending", {
     limit: String(safeLimit),
-    pos: String(pos || ""),
-    locale,
-    contentfilter: contentFilter,
-    media_filter: "gif,tinygif,mediumgif",
+    offset: String(safeOffset),
+    lang,
+    rating,
   });
 
+  const results = Array.isArray(data.data) ? data.data.map(mapGiphyResult) : [];
+  const count = results.length;
+  const offset = toSafeNumber(data?.pagination?.offset);
+  const total = toSafeNumber(data?.pagination?.total_count);
+  const nextOffset = offset + count;
+
   return {
-    count: Array.isArray(data.results) ? data.results.length : 0,
-    next: data.next || "",
-    results: Array.isArray(data.results)
-      ? data.results.map(mapTenorResult)
-      : [],
+    count,
+    next: total > nextOffset ? String(nextOffset) : "",
+    results,
+  };
+};
+
+export const searchStickersService = async ({
+  query = "",
+  limit = 20,
+  pos = "",
+  locale = "en_US",
+  contentFilter = "off",
+} = {}) => {
+  const trimmedQuery = String(query).trim();
+  if (!trimmedQuery) {
+    throw new GifServiceError("query is required", 400);
+  }
+
+  const safeLimit = Math.min(parsePositiveInt(limit, 20), 50);
+  const safeOffset = parseNonNegativeInt(pos, 0);
+  const lang = normalizeLocaleToLang(locale);
+  const rating = mapContentFilterToRating(contentFilter);
+
+  const data = await requestGiphy("stickers/search", {
+    q: trimmedQuery,
+    limit: String(safeLimit),
+    offset: String(safeOffset),
+    lang,
+    rating,
+  });
+
+  const results = Array.isArray(data.data) ? data.data.map(mapGiphyResult) : [];
+  const count = results.length;
+  const offset = toSafeNumber(data?.pagination?.offset);
+  const total = toSafeNumber(data?.pagination?.total_count);
+  const nextOffset = offset + count;
+
+  return {
+    query: trimmedQuery,
+    count,
+    next: total > nextOffset ? String(nextOffset) : "",
+    results,
+  };
+};
+
+export const getTrendingStickersService = async ({
+  limit = 20,
+  pos = "",
+  locale = "en_US",
+  contentFilter = "off",
+} = {}) => {
+  const safeLimit = Math.min(parsePositiveInt(limit, 20), 50);
+  const safeOffset = parseNonNegativeInt(pos, 0);
+  const lang = normalizeLocaleToLang(locale);
+  const rating = mapContentFilterToRating(contentFilter);
+
+  const data = await requestGiphy("stickers/trending", {
+    limit: String(safeLimit),
+    offset: String(safeOffset),
+    lang,
+    rating,
+  });
+
+  const results = Array.isArray(data.data) ? data.data.map(mapGiphyResult) : [];
+  const count = results.length;
+  const offset = toSafeNumber(data?.pagination?.offset);
+  const total = toSafeNumber(data?.pagination?.total_count);
+  const nextOffset = offset + count;
+
+  return {
+    count,
+    next: total > nextOffset ? String(nextOffset) : "",
+    results,
   };
 };
 
 export const getGifCategoriesService = async ({ locale = "en_US" } = {}) => {
-  const data = await requestTenor("categories", { locale });
+  try {
+    const lang = normalizeLocaleToLang(locale);
+    const data = await requestGiphy("gifs/categories", {
+      lang,
+    });
 
-  const tags = Array.isArray(data.tags)
-    ? data.tags.map((item) => ({
-        searchTerm: item.searchterm || "",
-        path: item.path || "",
-        imageUrl: item.image || "",
-        name: item.name || item.searchterm || "",
-      }))
-    : [];
+    const categories = Array.isArray(data.data)
+      ? data.data.map((item) => {
+          const imageUrl =
+            item?.gif?.images?.fixed_width_small_still?.url ||
+            item?.gif?.images?.original_still?.url ||
+            "";
+          const name = String(item?.name || "").trim();
+          const searchTerm = name.toLowerCase();
 
-  return {
-    count: tags.length,
-    categories: tags,
-  };
+          return {
+            searchTerm,
+            path: searchTerm,
+            imageUrl,
+            name,
+          };
+        })
+      : [];
+
+    return {
+      count: categories.length,
+      categories,
+    };
+  } catch (error) {
+    if (
+      error instanceof GifServiceError &&
+      [403, 404].includes(error.statusCode)
+    ) {
+      return {
+        count: 0,
+        categories: [],
+      };
+    }
+    throw error;
+  }
 };

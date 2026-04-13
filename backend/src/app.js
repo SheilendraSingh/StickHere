@@ -4,6 +4,7 @@ import authRoutes from "./routes/authRoutes.js";
 import roomRoutes from "./routes/roomRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import mediaRoutes from "./routes/mediaRoutes.js";
+import gifRoutes from "./routes/gifRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 // Create an Express application instance to set up our server and define routes for handling incoming HTTP requests. This app will serve as the main entry point for our backend API, allowing us to define endpoints for various functionalities such as user authentication, chat management, and more.
@@ -34,6 +35,8 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/messages", messageRoutes);
 
 app.use("/api/media", mediaRoutes);
+
+app.use("/api/gifs", gifRoutes);
 
 app.use("/api/users", userRoutes);
 
