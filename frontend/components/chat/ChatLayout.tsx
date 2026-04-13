@@ -53,6 +53,7 @@ export default function ChatLayout() {
           messages={messages}
           currentUserId={user?._id}
           isLoading={isMessageLoading}
+          alignMode="room"
         />
         <TypingIndicator users={typingUsers} />
         <MessageInput

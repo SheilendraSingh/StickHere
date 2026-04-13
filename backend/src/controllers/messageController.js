@@ -27,6 +27,13 @@ const canAccessRoom = (room, userId) => {
 
 export const sendMessage = async (req, res) => {
   try {
+    if (!req.user?._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
     const { roomName, text, attachments = [], messageType = "text" } = req.body;
 
     if (!roomName) {
@@ -96,7 +103,7 @@ export const sendMessage = async (req, res) => {
       message: populatedMessage,
     });
   } catch (error) {
-    console.error("Send message error:", error.message);
+    console.error("Send message error:", error);
 
     if (error.name === "ValidationError" || error.name === "CastError") {
       return res.status(400).json({
@@ -105,9 +112,14 @@ export const sendMessage = async (req, res) => {
       });
     }
 
+    const errorMessage = String(error?.message || "");
+
     return res.status(500).json({
       success: false,
       message: "Server error while sending message",
+      ...(process.env.NODE_ENV !== "production"
+        ? { debug: errorMessage || "Unknown send message error" }
+        : {}),
     });
   }
 };

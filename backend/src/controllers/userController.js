@@ -147,7 +147,7 @@ export const updateMyPresence = async (req, res) => {
     };
 
     const user = await User.findByIdAndUpdate(req.userId, update, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     }).select(PUBLIC_USER_FIELDS);
 

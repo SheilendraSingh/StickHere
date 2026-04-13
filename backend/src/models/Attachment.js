@@ -113,14 +113,13 @@ const attachmentSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-attachmentSchema.pre("validate", function (next) {
+attachmentSchema.pre("validate", function () {
   if (this.isDeleted && !this.deletedAt) {
     this.deletedAt = new Date();
   }
   if (!this.isDeleted && this.deletedAt) {
     this.deletedAt = null;
   }
-  next();
 });
 
 attachmentSchema.index({ uploadedBy: 1, createdAt: -1 });

@@ -44,7 +44,7 @@ export const getOrCreateRoom = async (req, res) => {
     const room = await Room.findOneAndUpdate(
       { roomName: normalizedRoomName },
       { $setOnInsert: payload },
-      { new: true, upsert: true, runValidators: true },
+      { returnDocument: "after", upsert: true, runValidators: true },
     );
 
     return res.status(200).json({
@@ -116,33 +116,79 @@ export const getMyRooms = async (req, res) => {
       });
     }
 
-    const rooms = [
-      { roomName: "world", type: "world", displayName: "World Chat" },
+    const country = typeof req.user.country === "string" ? req.user.country.trim() : "";
+    const state = typeof req.user.state === "string" ? req.user.state.trim() : "";
+    const city = typeof req.user.city === "string" ? req.user.city.trim() : "";
+
+    const roomDescriptors = [
+      {
+        roomName: "world",
+        displayName: "World Chat",
+        type: "world",
+        country: "",
+        state: "",
+        city: "",
+      },
     ];
 
-    if (req.user.country) {
-      rooms.push({
-        roomName: req.user.country.toLowerCase(),
+    if (country.length >= 2) {
+      roomDescriptors.push({
+        roomName: country.toLowerCase(),
         type: "country",
-        displayName: req.user.country,
+        displayName: country,
+        country,
+        state: "",
+        city: "",
       });
     }
 
-    if (req.user.country && req.user.state) {
-      rooms.push({
-        roomName: `${req.user.country.toLowerCase()}-${req.user.state.toLowerCase()}`,
+    if (country.length >= 2 && state.length >= 2) {
+      roomDescriptors.push({
+        roomName: `${country.toLowerCase()}-${state.toLowerCase()}`,
         type: "state",
-        displayName: `${req.user.state}, ${req.user.country}`,
+        displayName: `${state}, ${country}`,
+        country,
+        state,
+        city: "",
       });
     }
 
-    if (req.user.country && req.user.state && req.user.city) {
-      rooms.push({
-        roomName: `${req.user.country.toLowerCase()}-${req.user.state.toLowerCase()}-${req.user.city.toLowerCase()}`,
+    if (country.length >= 2 && state.length >= 2 && city.length >= 2) {
+      roomDescriptors.push({
+        roomName: `${country.toLowerCase()}-${state.toLowerCase()}-${city.toLowerCase()}`,
         type: "city",
-        displayName: `${req.user.city}, ${req.user.state}, ${req.user.country}`,
+        displayName: `${city}, ${state}, ${country}`,
+        country,
+        state,
+        city,
       });
     }
+
+    // Ensure all default/user location rooms exist in DB before returning.
+    const rooms = await Promise.all(
+      roomDescriptors.map(async (room) =>
+        Room.findOneAndUpdate(
+          { roomName: normalizeRoomName(room.roomName) },
+          {
+            $setOnInsert: {
+              roomName: normalizeRoomName(room.roomName),
+              displayName: room.displayName,
+              type: room.type,
+              country: room.country,
+              state: room.state,
+              city: room.city,
+              description: "",
+              createdBy: null,
+            },
+          },
+          {
+            returnDocument: "after",
+            upsert: true,
+            runValidators: true,
+          },
+        ),
+      ),
+    );
 
     return res.status(200).json({
       success: true,

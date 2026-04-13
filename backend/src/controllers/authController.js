@@ -9,15 +9,23 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, password, country, state, city, bio, avatar } =
       req.body;
+    const normalizedName = typeof name === "string" ? name.trim() : "";
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
 
-    if (!name || !email || !password) {
+    if (!normalizedName || !normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         message: "Name, email, and password are required",
       });
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
+    if (typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long",
+      });
+    }
 
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
@@ -26,7 +34,7 @@ export const registerUser = async (req, res) => {
         .json({ success: false, message: "User already exists" });
     }
     const user = await User.create({
-      name: String(name).trim(),
+      name: normalizedName,
       email: normalizedEmail,
       password,
       country,
@@ -45,10 +53,57 @@ export const registerUser = async (req, res) => {
       user,
     });
   } catch (error) {
-    console.error("Register error", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server error during registration" });
+    console.error("Register error", error);
+
+    if (error?.name === "ValidationError") {
+      const firstValidationError = Object.values(error.errors || {})[0];
+      return res.status(400).json({
+        success: false,
+        message: firstValidationError?.message || "Invalid registration data",
+      });
+    }
+
+    if (
+      error?.code === 11000 &&
+      (error?.keyPattern?.email || error?.keyValue?.email)
+    ) {
+      return res
+        .status(409)
+        .json({ success: false, message: "User already exists" });
+    }
+
+    if (
+      error?.message === "JWT_SECRET is not defined in environment variables"
+    ) {
+      return res.status(500).json({
+        success: false,
+        message: "Server configuration error while generating token",
+      });
+    }
+
+    const errorMessage = String(error?.message || "");
+    const isDatabaseConnectivityError =
+      error?.name === "MongoServerSelectionError" ||
+      error?.name === "MongooseServerSelectionError" ||
+      /buffering timed out|could not connect to any servers|ip that isn't whitelisted|server selection timed out|econnrefused|enotfound/i.test(
+        errorMessage,
+      );
+
+    if (isDatabaseConnectivityError) {
+      return res.status(503).json({
+        success: false,
+        message:
+          "Database is unavailable right now. Please try again in a moment.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error during registration",
+      ...(process.env.NODE_ENV !== "production"
+        ? { debug: errorMessage || "Unknown registration error" }
+        : {}),
+    });
   }
 };
 
@@ -199,7 +254,8 @@ export const sendTestEmail = async (req, res) => {
     if (!to) {
       return res.status(400).json({
         success: false,
-        message: "Recipient email is required (body.to or logged-in user email)",
+        message:
+          "Recipient email is required (body.to or logged-in user email)",
       });
     }
 

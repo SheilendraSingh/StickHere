@@ -6,12 +6,14 @@ interface MessageListProps {
   messages: ChatMessage[];
   currentUserId?: string;
   isLoading?: boolean;
+  alignMode?: "room" | "direct";
 }
 
 export default function MessageList({
   messages,
   currentUserId,
   isLoading = false,
+  alignMode = "room",
 }: MessageListProps) {
   if (isLoading) {
     return <div className="p-4 text-sm text-[#B0E4CC]/80">Loading messages...</div>;
@@ -28,6 +30,7 @@ export default function MessageList({
           key={message._id}
           message={message}
           currentUserId={currentUserId}
+          alignMode={alignMode}
         />
       ))}
     </div>

@@ -62,7 +62,7 @@ export const getOrCreateRoomService = async ({
     return await Room.findOneAndUpdate(
       { roomName: normalizedRoomName },
       { $setOnInsert: payload },
-      { new: true, upsert: true, runValidators: true },
+      { returnDocument: "after", upsert: true, runValidators: true },
     );
   } catch (error) {
     if (error.name === "ValidationError" || error.name === "CastError") {

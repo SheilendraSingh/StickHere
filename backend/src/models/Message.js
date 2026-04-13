@@ -93,7 +93,7 @@ const messageSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-messageSchema.pre("validate", function (next) {
+messageSchema.pre("validate", function () {
   const hasText = typeof this.text === "string" && this.text.trim().length > 0;
   const hasAttachments =
     Array.isArray(this.attachments) && this.attachments.length > 0;
@@ -109,8 +109,6 @@ messageSchema.pre("validate", function (next) {
   if (hasAttachments && hasText && this.messageType === "text") {
     this.messageType = "mixed";
   }
-
-  next();
 });
 
 messageSchema.index({ room: 1, createdAt: -1 });

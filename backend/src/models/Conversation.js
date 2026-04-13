@@ -87,7 +87,7 @@ const conversationSchema = new mongoose.Schema(
 
 const toObjectId = (id) => new mongoose.Types.ObjectId(id.toString());
 
-conversationSchema.pre("validate", function (next) {
+conversationSchema.pre("validate", function () {
   if (Array.isArray(this.participants) && this.participants.length > 0) {
     const uniqueParticipantIds = [
       ...new Set(this.participants.map((id) => id.toString())),
@@ -125,11 +125,9 @@ conversationSchema.pre("validate", function (next) {
   if (this.type === "group" && !this.title) {
     this.invalidate("title", "Group conversation title is required");
   }
-
-  next();
 });
 
-conversationSchema.pre("save", function (next) {
+conversationSchema.pre("save", function () {
   if (this.type === "direct" && Array.isArray(this.participants)) {
     const sorted = this.participants
       .map((id) => id.toString())
@@ -140,7 +138,6 @@ conversationSchema.pre("save", function (next) {
   }
 
   this.lastActivityAt = new Date();
-  next();
 });
 
 conversationSchema.index({ participants: 1 });

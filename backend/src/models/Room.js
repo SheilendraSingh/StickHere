@@ -1,4 +1,10 @@
 import mongoose from "mongoose";
+
+const hasMinLengthIfProvided = (value) => {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  return normalized.length === 0 || normalized.length >= 2;
+};
+
 const roomSchema = new mongoose.Schema(
   {
     roomName: {
@@ -26,24 +32,33 @@ const roomSchema = new mongoose.Schema(
       type: String,
       default: "",
       trim: true,
-      minlength: 2,
       maxlength: 120,
+      validate: {
+        validator: hasMinLengthIfProvided,
+        message: "Country must be at least 2 characters when provided",
+      },
     },
 
     state: {
       type: String,
       default: "",
       trim: true,
-      minlength: 2,
       maxlength: 120,
+      validate: {
+        validator: hasMinLengthIfProvided,
+        message: "State must be at least 2 characters when provided",
+      },
     },
 
     city: {
       type: String,
       default: "",
       trim: true,
-      minlength: 2,
       maxlength: 120,
+      validate: {
+        validator: hasMinLengthIfProvided,
+        message: "City must be at least 2 characters when provided",
+      },
     },
     description: {
       type: String,
@@ -81,28 +96,27 @@ roomSchema.virtual("isGroupChat").get(function () {
   return this.type === "group";
 });
 
-roomSchema.pre("save", function (next) {
+roomSchema.pre("save", function () {
   if (Array.isArray(this.users) && this.users.length > 0) {
     const uniqueUserIds = [...new Set(this.users.map((id) => id.toString()))];
     this.users = uniqueUserIds.map((id) => new mongoose.Types.ObjectId(id));
   }
-  next();
 });
 
-roomSchema.pre("validate", function (next) {
-  const hascountry = this.country && this.country.trim() !== "";
+roomSchema.pre("validate", function () {
+  const hasCountry = this.country && this.country.trim() !== "";
   const hasState = this.state && this.state.trim() !== "";
   const hasCity = this.city && this.city.trim() !== "";
 
-  if (this.type === "country" && !hascountry) {
+  if (this.type === "country" && !hasCountry) {
     this.invalidate("country", "Country is required for country rooms");
   }
 
-  if (this.type === "state" && (!hascountry || !hasState)) {
+  if (this.type === "state" && (!hasCountry || !hasState)) {
     this.invalidate("state", "Country and state are required for state rooms");
   }
 
-  if (this.type === "city" && (!hascountry || !hasState || !hasCity)) {
+  if (this.type === "city" && (!hasCountry || !hasState || !hasCity)) {
     this.invalidate(
       "city",
       "Country, state, and city are required for city rooms",
@@ -119,8 +133,6 @@ roomSchema.pre("validate", function (next) {
     this.state = "";
     this.city = "";
   }
-
-  next();
 });
 const Room = mongoose.models.Room || mongoose.model("Room", roomSchema);
 
