@@ -13,7 +13,9 @@ export const notFound = (req, res, _next) => {
 };
 
 export const errorHandler = (err, req, res, _next) => {
-  let statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
+  let statusCode =
+    Number(err?.statusCode || err?.status) ||
+    (res.statusCode && res.statusCode !== 200 ? res.statusCode : 500);
   let message = err?.message || "Internal server error";
 
   // Mongoose bad ObjectId or cast errors
